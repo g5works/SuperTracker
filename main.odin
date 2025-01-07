@@ -13,67 +13,19 @@ import img "vendor:stb/image"
 import gltf "vendor:cgltf"
 
 import "loaders"
+import "primitives"
 
-WIDTH: i32 = 640
-HEIGHT: i32 = 480
+WIDTH: i32 = 1280
+HEIGHT: i32 = 720
 
 
 IndexTri :: [3]u32
 
 
 
-
 main :: proc() {
 
 
-
-    
-    vertices: [dynamic]loaders.Vertex = loaders.readOBJFile("models/cube.obj")
-    defer delete(vertices)
-
-
-    for i in vertices {
-        fmt.println(i.position)
-    }
-
-
-    // vertices: []loaders.Vertex = {
-
-    //     { {  0.5,  0.5,  0.5  }, {  1.0,  0.3,  0.0  }, {  1.0,  1.0  } }, // front top right 0
-    //     { { -0.5,  0.5,  0.5  }, {  1.0,  1.0,  0.0  }, {  0.0,  1.0  } }, // front top left 1
-
-    //     { {  0.5, -0.5,  0.5  }, {  1.0,  1.0,  0.0  }, {  1.0,  0.0  } }, // front bottom right 2
-    //     { { -0.5, -0.5,  0.5  }, {  1.0,  0.3,  0.0  }, {  0.0,  0.0  } }, // front bottom left 3
-
-
-    //     { {  0.5,  0.5, -0.5  }, {  1.0,  0.3,  0.0  }, {  1.0,  1.0  } }, // back top right 4
-    //     { { -0.5,  0.5, -0.5  }, {  1.0,  1.0,  0.0  }, {  0.0,  1.0  } }, // back top left 5
-
-    //     { {  0.5, -0.5, -0.5  }, {  1.0,  1.0,  0.0  }, {  1.0,  0.0  } }, // back bottom right 6
-    //     { { -0.5, -0.5, -0.5  }, {  1.0,  0.3,  0.0  }, {  0.0,  0.0  } }, // back bottom left 7
-
-
-    // }
-
-    // vertices: []loaders.Vertex = {
-
-    //     {{ 0.5,  0.5,  0.5}, {1.0, 1.0, 1.0} ,{0.0, 0.0}},
-    //     {{-0.5, -0.5,  0.5}, {1.0, 1.0, 1.0} ,{1.0, 1.0}},
-    //     {{ 0.5, -0.5,  0.5}, {1.0, 1.0, 1.0} ,{0.0, 1.0}},
-    //     {{-0.5, -0.5,  0.5}, {1.0, 1.0, 1.0} ,{1.0, 1.0}},
-    //     {{ 0.5,  0.5,  0.5}, {1.0, 1.0, 1.0} ,{0.0, 0.0}},
-    //     {{-0.5,  0.5,  0.5}, {1.0, 1.0, 1.0} ,{1.0, 0.0}},
-
-
-    // }
-
-    // indices: []IndexTri = {
- 
-    //     {0, 1, 3},
-    //     {0, 2, 3},
-    //     {0, 2, 6},
-
-    // }
 
      
     assert(sdl.Init(sdl.INIT_EVERYTHING) >= 0)
@@ -94,7 +46,7 @@ main :: proc() {
     //load opengl functions
     gl.load_up_to(3, 3, sdl.gl_set_proc_address)
     gl.Enable(gl.DEPTH_TEST)
-    gl.DepthFunc(gl.LEQUAL)
+    // gl.DepthFunc(gl.LEQUAL)
   
 
     
@@ -114,24 +66,26 @@ main :: proc() {
     defer gl.DeleteBuffers(1, &vbo)
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 
-    // gl.GenBuffers(1, &ibo)
-    // defer gl.DeleteBuffers(gl.ELEMENT_ARRAY_BUFFER, &ibo)
-
-    //vertex, index
-    fillVBuffer(vbo, vertices)
-    // fillIBuffer(ibo, indices)
 
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 
-    loadTexture("sphere.png", uniforms["tex"].location, 1);
+    loadTexture("textures/cobblestone/wedged-cobblestone_albedo.png", uniforms["tex"].location, 1)
+    loadTexture("textures/cobblestone/wedged-cobblestone_normal-ogl.png", uniforms["normaltex"].location, 2)
+    loadTexture("textures/pointlight.png", uniforms["helpertex"].location, 3)
 
     event: sdl.Event
 
     x: f32 = 0
 
+
+
+    loopcounter: i32 = 1
+
+    camera: glm.vec3 = {6, 0, 0}
+    lookDirection: glm.vec3 = {0, 0, 0}
 
     running: for {
 
@@ -155,39 +109,69 @@ main :: proc() {
             }
             
         }
-        
 
+        lights: [][2]glm.vec3 = {
+            {{6*glm.sin(x),0,6*glm.cos(x)}, {1, 1, 1}}
+        }
 
         gl.Viewport(0, 0, WIDTH, HEIGHT)
         gl.ClearColor(0, 0, 0, 1)
         gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 
-        position: glm.vec3 = {0, 0, 0}
-
-        model: glm.mat4 = glm.mat4(1.0)
-        view: glm.mat4 = glm.mat4Translate({0, 0, -1})
+        
+        view: glm.mat4 = glm.mat4LookAt(camera, lookDirection, {0, 1, 0})
         projection: glm.mat4 = glm.mat4Perspective(glm.radians(cast(f32)60.0), cast(f32)WIDTH/cast(f32)HEIGHT, 0.1, 100.0)              
 
-
-        model *= glm.mat4Translate({0, 0, -3})
-        model *= glm.mat4Rotate(1, x)
-
-        
-        
-        //so simple, so elegant, just looking like a wow
-        gl.UniformMatrix4fv(uniforms["camera"].location, 1, false, &projection[0,0])
+        //these are ur view and projection matrices, not that important
         gl.UniformMatrix4fv(uniforms["view"].location, 1, false, &view[0,0])
-        gl.UniformMatrix4fv(uniforms["model"].location, 1, false, &model[0,0])
+        gl.UniformMatrix4fv(uniforms["projection"].location, 1, false, &projection[0,0])
 
-        gl.DrawArrays(gl.TRIANGLES, 0, cast(i32)(len(vertices)/3))
-        // gl.DrawElements(gl.TRIANGLES, i32(len(indices)*3), gl.UNSIGNED_INT, nil)
-        
 
-        glCheckError()
-        
+
+        //draw light helpers
+        fillVBuffer(vbo, primitives.plane)
+        gl.Uniform1i(uniforms["rendertype"].location, 1)
+        for i in lights {
+            
+            model: glm.mat4 = glm.mat4(1);
+            model *= glm.mat4Translate({i[0][0], i[0][1], i[0][2]})
+
+            setModelMatrixUniform(uniforms, &model, "model", "normalmodel")
+
+            gl.Uniform3f(uniforms["lightpos"].location, i[0][0], i[0][1], i[0][2])
+            gl.Uniform3f(uniforms["lightcolor"].location, i[1][0], i[1][1], i[1][2])
+
+
+            gl.DrawArrays(gl.TRIANGLES, 0, cast(i32)len(primitives.plane))
+
+        }
+        //finish drawing light helpers
+
+
+
+        vc := fillVBufferWithModel(vbo, "models/icospheresmooth.obj");
+
+        gl.Uniform3f(uniforms["camerapos"].location, camera[0], camera[1], camera[2])
+        gl.Uniform1i(uniforms["rendertype"].location, 0)
+
+
+
+
+        model: glm.mat4 = glm.mat4(1.0)
+
+        model *= glm.mat4Rotate({glm.sin(x), glm.cos(x), glm.sin(2*x)}, x)
+        // model *= glm.mat4Rotate({1,1,1}, 0.1*x);
+
+        setModelMatrixUniform(uniforms, &model, "model", "normalmodel")
+
+        gl.DrawArrays(gl.TRIANGLES, 0, vc)        
+        glCheckError(loopcounter)
+
+
         sdl.GL_SwapWindow(win)
         x += 0.01
+        loopcounter += 1
 
     }
 
@@ -214,19 +198,37 @@ loadShaders :: proc(vsc: []u8, fsc: []u8) -> (u32, map[string]gl.Uniform_Info) {
 
 }
 
-fillVBuffer :: proc(vbo: u32, vertices: [dynamic]loaders.Vertex) {
+fillVBuffer :: proc(vbo: u32, vertices: []primitives.Vertex) {
 
     gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-
-    gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*size_of(loaders.Vertex), raw_data(vertices), gl.STATIC_DRAW)
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, false, size_of(loaders.Vertex), offset_of(loaders.Vertex, position))
-    gl.VertexAttribPointer(1, 3, gl.FLOAT, false, size_of(loaders.Vertex), offset_of(loaders.Vertex, normal))
-    gl.VertexAttribPointer(2, 2, gl.FLOAT, false, size_of(loaders.Vertex), offset_of(loaders.Vertex, texture))
+    gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*size_of(primitives.Vertex), raw_data(vertices), gl.STATIC_DRAW)
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, false, size_of(primitives.Vertex), offset_of(primitives.Vertex, position))
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, false, size_of(primitives.Vertex), offset_of(primitives.Vertex, normal))
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, false, size_of(primitives.Vertex), offset_of(primitives.Vertex, texture))
 
     gl.EnableVertexAttribArray(0);
     gl.EnableVertexAttribArray(1);
     gl.EnableVertexAttribArray(2);
 
+
+}
+
+fillVBufferWithModel :: proc(vbo: u32, mfile: string) -> i32 {
+
+    vertices := loaders.readOBJFile(mfile)
+    defer delete(vertices)
+
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+    gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*size_of(primitives.Vertex), raw_data(vertices), gl.STATIC_DRAW)
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, false, size_of(primitives.Vertex), offset_of(primitives.Vertex, position))
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, false, size_of(primitives.Vertex), offset_of(primitives.Vertex, normal))
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, false, size_of(primitives.Vertex), offset_of(primitives.Vertex, texture))
+
+    gl.EnableVertexAttribArray(0);
+    gl.EnableVertexAttribArray(1);
+    gl.EnableVertexAttribArray(2);
+
+    return cast(i32)len(vertices)
 
 }
 
@@ -268,10 +270,37 @@ loadTexture :: proc(path: cstring, textureUniform: i32, textureSlot: u32) -> u32
 
 }
 
-glCheckError :: proc() {
+surfaceToTexture :: proc(surface: ^sdl.Surface, textureUniform: i32, textureSlot: u32) {
+
+    texture: u32
+    colormode: u32
+
+    gl.ActiveTexture(gl.TEXTURE0 + textureSlot)
+
+    gl.GenTextures(1, &texture)
+    gl.BindTexture(gl.TEXTURE_2D, texture)
+
+
+
+    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, surface.w, surface.h, 0, gl.RGBA, gl.UNSIGNED_BYTE, surface.pixels)
+    gl.GenerateMipmap(gl.TEXTURE_2D)
+
+}
+
+setModelMatrixUniform :: proc(uniforms: map[string]gl.Uniform_Info, model: ^glm.mat4, modelUni: string, normalUni: string) {
+
+    normal: glm.mat3 = glm.mat3(glm.transpose(glm.inverse(model^)))
+
+    gl.UniformMatrix4fv(uniforms[modelUni].location, 1, false, &model[0,0])
+    gl.UniformMatrix3fv(uniforms[normalUni].location, 1, false, &normal[0,0])
+
+}
+
+glCheckError :: proc(loopcounter: i32) {
 
 
     for glerror := gl.GetError(); glerror != 0; {
+        fmt.println(loopcounter);
         fmt.println(glerror);
         assert(false)
     }

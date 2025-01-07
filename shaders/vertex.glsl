@@ -7,20 +7,23 @@ layout(location = 2) in vec2 texture;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat3 normalmodel;
 
-
-uniform vec4 offsets;
-
-out vec4 fragcolor;
 out vec2 tcoord;
+out vec3 tnormal; 
+out vec3 fragpos;
 
 
 void main() {
 
+    mat4 transform = projection * view * model;
 
-    gl_Position = projection * view * model * position;
+    tnormal = normalmodel * normals.xyz;
+    fragpos = vec3(model * position);
 
-    fragcolor = normals;
+    gl_Position = transform * position;
+
+
     tcoord = texture;
 
 }

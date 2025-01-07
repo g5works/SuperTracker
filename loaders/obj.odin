@@ -5,9 +5,9 @@ import "core:os"
 import "core:strings"
 import "core:strconv"
 import glm "core:math/linalg/glsl"
+import "../primitives/"
 
-
-readOBJFile :: proc(path: string) -> [dynamic]Vertex {
+readOBJFile :: proc(path: string) -> [dynamic]primitives.Vertex {
 
 
 
@@ -15,10 +15,10 @@ readOBJFile :: proc(path: string) -> [dynamic]Vertex {
     normals: [dynamic]glm.vec3
     texture: [dynamic]glm.vec2
 
-    vertices: [dynamic]Vertex
+    vertices: [dynamic]primitives.Vertex
 
-    data, ok := os.read_entire_file_from_filename(path)
-    assert(ok)
+    data, readfail := os.read_entire_file_from_filename(path)
+    assert(readfail)
 
     sd: string = string(data)
 
@@ -70,7 +70,7 @@ readOBJFile :: proc(path: string) -> [dynamic]Vertex {
 
                 for i in f1 {
 
-                    vtex: Vertex 
+                    vtex: primitives.Vertex 
                     vtex.position = positions[i[0]]
                     vtex.texture = texture[i[1]]
                     vtex.normal = normals[i[2]]
@@ -80,7 +80,7 @@ readOBJFile :: proc(path: string) -> [dynamic]Vertex {
 
                 for i in f2 {
 
-                    vtex: Vertex 
+                    vtex: primitives.Vertex 
                     vtex.position = positions[i[0]]
                     vtex.texture = texture[i[1]]
                     vtex.normal = normals[i[2]]
@@ -96,7 +96,7 @@ readOBJFile :: proc(path: string) -> [dynamic]Vertex {
 
                 for i in f1 {
 
-                    vtex: Vertex 
+                    vtex: primitives.Vertex 
                     vtex.position = positions[i[0]]
                     vtex.texture = texture[i[1]]
                     vtex.normal = normals[i[2]]
