@@ -12,6 +12,7 @@ uniform mat3 normalmodel;
 out vec2 tcoord;
 out vec3 tnormal; 
 out vec3 fragpos;
+out int rt;
 
 
 void main() {
@@ -21,10 +22,10 @@ void main() {
     tnormal = normalmodel * normals.xyz;
     fragpos = vec3(model * position);
 
+    tcoord = texture;
+
     gl_Position = transform * position;
 
-
-    tcoord = texture;
 
 }
 
