@@ -1,8 +1,10 @@
 #version 330 core
 
 uniform sampler2D helpertex;
+uniform vec3 helpercolor;
 
 in vec2 tcoord;
+
 
 out vec4 color;
 
@@ -14,7 +16,6 @@ void main() {
     }
 
     
-
-    color = t;
+    color = t * vec4(helpercolor, 1);
 
 }

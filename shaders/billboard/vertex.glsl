@@ -8,7 +8,6 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 model;
 uniform vec2 scale;
-
 out vec2 tcoord;
 
 void main() {

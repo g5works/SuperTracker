@@ -1,4 +1,4 @@
-#version 330 core
+#version 400 core
 
 layout(location = 0) in vec4 position;
 layout(location = 1) in vec4 normals;
@@ -12,8 +12,9 @@ uniform mat4 view;
 void main()
 {
     vec4 vp = projection * view * position;
-    gl_Position = position;
+    gl_Position = vp;
     TexCoords = position.xyz;
+
 }  
 
 
